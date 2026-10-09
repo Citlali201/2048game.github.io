@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#faf8ef">
+  <meta name="description" content="Chơi 2048 miễn phí ngay trên trình duyệt.">
+  <title>2048 — Trò chơi ghép số</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #faf8ef;
+      --ink: #776e65;
+      --board: #bbada0;
+      --empty: #cdc1b4;
+      --accent: #8f7a66;
+      --button: #8f7a66;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 28px 18px 36px;
+      background: var(--page);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    button { font: inherit; }
+
+    .game {
+      width: min(100%, 500px);
+      margin: 0 auto;
+    }
+
+    .topline, .scores, .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(48px, 13vw, 76px);
+      font-weight: 800;
+      letter-spacing: -5px;
+      line-height: 1;
+    }
+
+    .scores { justify-content: flex-end; }
+
+    .score-box {
+      min-width: 82px;
+      padding: 8px 12px 7px;
+      border-radius: 4px;
+      background: var(--board);
+      color: white;
+      text-align: center;
+    }
+
+    .score-label {
+      display: block;
+      color: #eee4da;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .score-value {
+      display: block;
+      min-height: 29px;
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 29px;
+    }
+
+    .intro {
+      margin: 20px 0 16px;
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .intro strong { color: #5e554c; }
+
+    .actions { justify-content: flex-end; margin-bottom: 12px; }
+
+    .button {
+      min-height: 42px;
+      padding: 0 15px;
+      border: 0;
+      border-radius: 4px;
+      background: var(--button);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .button:hover { background: #796653; }
+    .button:focus-visible { outline: 3px solid #edc22e; outline-offset: 2px; }
+
+    .board-wrap { position: relative; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, minmax(0, 1fr));
+      gap: clamp(8px, 2.2vw, 13px);
+      width: 100%;
+      aspect-ratio: 1;
+      padding: clamp(8px, 2.2vw, 13px);
+      border-radius: 6px;
+      background: var(--board);
+      outline: none;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .cell {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      background: var(--empty);
+      color: var(--ink);
+      font-size: clamp(24px, 8vw, 48px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      transition: background-color 100ms ease, transform 100ms ease;
+    }
+
+    .tile-2 { background: #eee4da; }
+    .tile-4 { background: #ede0c8; }
+    .tile-8 { background: #f2b179; color: #fffaf3; }
+    .tile-16 { background: #f59563; color: #fffaf3; }
+    .tile-32 { background: #f67c5f; color: #fffaf3; }
+    .tile-64 { background: #f65e3b; color: #fffaf3; }
+    .tile-128, .tile-256, .tile-512 { background: #edcf72; color: #fffaf3; font-size: clamp(21px, 6.5vw, 38px); }
+    .tile-1024, .tile-2048 { background: #edc22e; color: #fffaf3; font-size: clamp(18px, 5.5vw, 32px); }
+    .tile-super { background: #3c3a32; color: #fffaf3; font-size: clamp(17px, 5vw, 28px); }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: rgb(250 248 239 / 78%);
+      text-align: center;
+    }
+
+    .overlay[hidden] { display: none; }
+    .overlay-content { padding: 24px; }
+    .overlay h2 { margin: 0 0 8px; font-size: clamp(32px, 9vw, 52px); }
+    .overlay p { margin: 0 0 18px; font-size: 18px; }
+
+    .help {
+      margin: 22px 0 0;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .help strong { color: #5e554c; }
+
+    @media (max-width: 390px) {
+      body { padding: 20px 14px 28px; }
+      .score-box { min-width: 70px; padding-right: 8px; padding-left: 8px; }
+      .intro { margin-top: 15px; font-size: 15px; }
+      .button { padding: 0 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <header class="topline">
+      <h1>2048</h1>
+      <div class="scores" aria-label="Điểm số">
+        <div class="score-box">
+          <span class="score-label">Điểm</span>
+          <span class="score-value" id="score">0</span>
+        </div>
+        <div class="score-box">
+          <span class="score-label">Kỷ lục</span>
+          <span class="score-value" id="best">0</span>
+        </div>
+      </div>
+    </header>
+
+    <p class="intro"><strong>Ghép các ô số để tạo ô 2048!</strong> Dùng phím mũi tên hoặc vuốt để di chuyển.</p>
+
+    <div class="actions">
+      <button class="button" id="new-game" type="button">Chơi mới</button>
+    </div>
+
+    <section class="board-wrap" aria-label="Bàn chơi 2048">
+      <div class="board" id="board" role="grid" aria-label="Bàn cờ, dùng phím mũi tên để di chuyển" tabindex="0"></div>
+      <div class="overlay" id="overlay" hidden>
+        <div class="overlay-content">
+          <h2 id="overlay-title"></h2>
+          <p id="overlay-message"></p>
+          <button class="button" id="overlay-button" type="button"></button>
+        </div>
+      </div>
+    </section>
+
+    <p class="help"><strong>Cách chơi:</strong> Dùng phím mũi tên hoặc vuốt để đẩy các ô. Hai ô có cùng số sẽ hợp thành một khi chạm nhau. Tạo ô <strong>2048</strong> để chiến thắng!</p>
+    <p class="help" id="announcement" aria-live="polite" aria-atomic="true"></p>
+  </main>
+
+  <script>
+    (() => {
+      const SIZE = 4;
+      const boardElement = document.getElementById("board");
+      const scoreElement = document.getElementById("score");
+      const bestElement = document.getElementById("best");
+      const overlay = document.getElementById("overlay");
+      const overlayTitle = document.getElementById("overlay-title");
+      const overlayMessage = document.getElementById("overlay-message");
+      const overlayButton = document.getElementById("overlay-button");
+      const announcement = document.getElementById("announcement");
+      let board = [];
+      let score = 0;
+      let best = Number(localStorage.getItem("2048-best") || 0);
+      let won = false;
+      let keepPlaying = false;
+      let pointerStart = null;
+
+      function updateScores() {
+        scoreElement.textContent = score;
+        bestElement.textContent = best;
+      }
+
+      function saveBest() {
+        if (score > best) {
+          best = score;
+          localStorage.setItem("2048-best", String(best));
+        }
+      }
+
+      function render() {
+        boardElement.replaceChildren();
+        board.forEach((value, index) => {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.setAttribute("role", "gridcell");
+          cell.setAttribute("aria-label", value ? String(value) : "Trống");
+          if (value) {
+            cell.textContent = value;
+            cell.classList.add("filled");
+            cell.classList.add(value <= 2048 ? `tile-${value}` : "tile-super");
+          }
+          cell.dataset.index = index;
+          boardElement.appendChild(cell);
+        });
+        updateScores();
+      }
+
+      function addTile() {
+        const empty = [];
+        board.forEach((value, index) => {
+          if (!value) empty.push(index);
+        });
+        if (!empty.length) return -1;
+        const index = empty[Math.floor(Math.random() * empty.length)];
+        board[index] = Math.random() < 0.9 ? 2 : 4;
+        return index;
+      }
+
+      function animateMoves(moves, oldCells, oldRects, spawnedIndex) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        const boardRect = boardElement.getBoundingClientRect();
+
+        for (const { sources, target } of moves) {
+          const targetCell = boardElement.querySelector(`[data-index="${target}"]`);
+          if (!targetCell) continue;
+          const targetRect = targetCell.getBoundingClientRect();
+          const sourceRect = oldRects[sources[0]];
+          const dx = sourceRect.left - targetRect.left;
+          const dy = sourceRect.top - targetRect.top;
+
+          if (dx || dy) {
+            targetCell.animate(
+              [
+                { transform: `translate(${dx}px, ${dy}px)` },
+                { transform: "translate(0, 0)" }
+              ],
+              { duration: 150, easing: "ease-out" }
+            );
+          } else if (sources.length > 1) {
+            targetCell.animate(
+              [{ transform: "scale(1.12)" }, { transform: "scale(1)" }],
+              { duration: 150, easing: "ease-out" }
+            );
+          }
+
+          for (const source of sources.slice(1)) {
+            const sourceCell = oldCells[source];
+            const sourceRect = oldRects[source];
+            const ghost = sourceCell.cloneNode(true);
+            ghost.removeAttribute("role");
+            ghost.removeAttribute("aria-label");
+            ghost.style.position = "absolute";
+            ghost.style.left = `${sourceRect.left - boardRect.left}px`;
+            ghost.style.top = `${sourceRect.top - boardRect.top}px`;
+            ghost.style.width = `${sourceRect.width}px`;
+            ghost.style.height = `${sourceRect.height}px`;
+            ghost.style.margin = "0";
+            ghost.style.pointerEvents = "none";
+            ghost.style.zIndex = "1";
+            boardElement.appendChild(ghost);
+            const animation = ghost.animate(
+              [
+                { transform: "translate(0, 0) scale(1)" },
+                {
+                  transform: `translate(${targetRect.left - sourceRect.left}px, ${targetRect.top - sourceRect.top}px) scale(.7)`,
+                  opacity: 0
+                }
+              ],
+              { duration: 150, easing: "ease-in" }
+            );
+            animation.onfinish = () => ghost.remove();
+            animation.oncancel = () => ghost.remove();
+          }
+        }
+
+        if (spawnedIndex >= 0) {
+          const spawnedCell = boardElement.querySelector(`[data-index="${spawnedIndex}"]`);
+          spawnedCell.animate(
+            [{ transform: "scale(.5)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }],
+            { duration: 130, easing: "ease-out" }
+          );
+        }
+      }
+
+      function startGame() {
+        board = Array(SIZE * SIZE).fill(0);
+        score = 0;
+        won = false;
+        keepPlaying = false;
+        overlay.hidden = true;
+        announcement.textContent = "";
+        addTile();
+        addTile();
+        render();
+        boardElement.focus();
+      }
+
+      function showOverlay(title, message, buttonText, action) {
+        overlayTitle.textContent = title;
+        overlayMessage.textContent = message;
+        overlayButton.textContent = buttonText;
+        overlayButton.onclick = action;
+        overlay.hidden = false;
+        overlayButton.focus();
+      }
+
+      function hasMoves() {
+        if (board.includes(0)) return true;
+        for (let row = 0; row < SIZE; row++) {
+          for (let col = 0; col < SIZE; col++) {
+            const index = row * SIZE + col;
+            if (col < SIZE - 1 && board[index] === board[index + 1]) return true;
+            if (row < SIZE - 1 && board[index] === board[index + SIZE]) return true;
+          }
+        }
+        return false;
+      }
+
+      function move(direction) {
+        if (!overlay.hidden) return;
+        const previous = board.slice();
+        const oldCells = [...boardElement.querySelectorAll(".cell")];
+        const oldRects = oldCells.map(cell => {
+          const { left, top, width, height } = cell.getBoundingClientRect();
+          return { left, top, width, height };
+        });
+        const lines = [];
+        for (let line = 0; line < SIZE; line++) {
+          const indexes = [];
+          for (let offset = 0; offset < SIZE; offset++) {
+            const row = direction === "up" ? offset : direction === "down" ? SIZE - 1 - offset : line;
+            const col = direction === "left" ? offset : direction === "right" ? SIZE - 1 - offset : line;
+            indexes.push(row * SIZE + col);
+          }
+          lines.push(indexes);
+        }
+
+        let gained = 0;
+        const moves = [];
+        for (const indexes of lines) {
+          const values = indexes
+            .map(index => ({ value: board[index], index }))
+            .filter(entry => entry.value);
+          const merged = [];
+          for (let i = 0; i < values.length; i++) {
+            if (values[i].value === values[i + 1]?.value) {
+              const value = values[i].value * 2;
+              merged.push({ value, sources: [values[i].index, values[i + 1].index] });
+              gained += value;
+              i++;
+            } else {
+              merged.push({ value: values[i].value, sources: [values[i].index] });
+            }
+          }
+          indexes.forEach((index, position) => {
+            const entry = merged[position];
+            board[index] = entry ? entry.value : 0;
+            if (entry) moves.push({ sources: entry.sources, target: index });
+          });
+        }
+
+        if (board.every((value, index) => value === previous[index])) return;
+        score += gained;
+        saveBest();
+        const spawnedIndex = addTile();
+        render();
+        animateMoves(moves, oldCells, oldRects, spawnedIndex);
+
+        if (!won && board.includes(2048)) {
+          won = true;
+          announcement.textContent = "Tuyệt vời! Bạn đã tạo được ô 2048.";
+          showOverlay("Bạn đã thắng!", "Bạn có muốn tiếp tục chơi không?", "Tiếp tục", () => {
+            keepPlaying = true;
+            overlay.hidden = true;
+            boardElement.focus();
+          });
+        } else if (!hasMoves()) {
+          announcement.textContent = "Hết nước đi.";
+          showOverlay("Kết thúc!", "Không còn nước đi nào. Thử lại nhé!", "Chơi lại", startGame);
+        } else if (gained) {
+          announcement.textContent = `Cộng ${gained} điểm. Tổng điểm: ${score}.`;
+        }
+      }
+
+      const keyDirections = {
+        ArrowUp: "up", w: "up", W: "up",
+        ArrowDown: "down", s: "down", S: "down",
+        ArrowLeft: "left", a: "left", A: "left",
+        ArrowRight: "right", d: "right", D: "right"
+      };
+
+      document.addEventListener("keydown", event => {
+        const direction = keyDirections[event.key];
+        if (!direction) return;
+        event.preventDefault();
+        move(direction);
+      });
+
+      boardElement.addEventListener("pointerdown", event => {
+        if (event.pointerType === "touch") {
+          pointerStart = { x: event.clientX, y: event.clientY };
+        }
+      });
+
+      boardElement.addEventListener("pointerup", event => {
+        if (!pointerStart) return;
+        const dx = event.clientX - pointerStart.x;
+        const dy = event.clientY - pointerStart.y;
+        pointerStart = null;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+        move(Math.abs(dx) > Math.abs(dy)
+          ? (dx > 0 ? "right" : "left")
+          : (dy > 0 ? "down" : "up"));
+      });
+
+      boardElement.addEventListener("pointercancel", () => {
+        pointerStart = null;
+      });
+
+      document.getElementById("new-game").addEventListener("click", startGame);
+      bestElement.textContent = best;
+      startGame();
+    })();
+  </script>
+</body>
+</html>
