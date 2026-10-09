@@ -8,4 +8,4 @@ B2605830-LÊ CHÍ TÀI
 
 B2605822-TRẦN SONG UYỂN NHI
 
-DỰ ÁN GAME 2048
+DỰ ÁN GAME 2048:https://citlali201.github.io/2048game.github.io/
