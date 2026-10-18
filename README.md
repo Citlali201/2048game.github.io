@@ -11,4 +11,4 @@
 Lê Chí Tài: Code, Viết Báo Cáo, Video
 Trần Song Uyển Nhi: PPT, Thuyết Trình
 
-Link Video:
+Link Video:https://youtu.be/JUbE6pWS-EY
