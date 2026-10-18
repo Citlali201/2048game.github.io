@@ -1,11 +1,14 @@
-26-27HK1-CT005D06
+# Dự án 4 — Phát triển và giới thiệu ứng dụng 2048
 
-DỰ ÁN 4 - BÀI TẬP LAB10-12
+**Học phần/lớp:** 26-27HK1-CT005D06  
+**Nhóm:**
+- B2605830 — Lê Chí Tài
+- B2605822 — Trần Song Uyển Nhi
 
-NHÓM GỒM:
+2048 là trò chơi ghép các ô số trên bàn cờ 4 × 4. Người chơi trượt các ô theo bốn hướng, ghép hai ô cùng giá trị để tạo ô có giá trị gấp đôi và cố gắng đạt 2048.
 
-B2605830-LÊ CHÍ TÀI
+**Phân chia công việc**
+Lê Chí Tài: Code, Viết Báo Cáo, Video
+Trần Song Uyển Nhi: PPT, Thuyết Trình
 
-B2605822-TRẦN SONG UYỂN NHI
-
-DỰ ÁN GAME 2048:https://citlali201.github.io/2048game.github.io/
+Link Video:
