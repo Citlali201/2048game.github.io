@@ -346,6 +346,7 @@
       let best = Number(localStorage.getItem("2048-best") || 0);
       let won = false;
       let pointerStart = null;
+      let pendingTwoSpawn = false;
 
       function updateScores() {
         scoreElement.textContent = score;
@@ -377,7 +378,7 @@
         updateScores();
       }
 
-      function addTile() {
+      function addTile(forceTwo = false) {
         const empty = [];
         let largestTile = 0;
         board.forEach((value, index) => {
@@ -386,14 +387,24 @@
         });
         if (!empty.length) return -1;
         const index = empty[Math.floor(Math.random() * empty.length)];
-        if (!largestTile) {
-          board[index] = Math.random() < 0.9 ? 2 : 4;
-          return index;
+        let value;
+        if (forceTwo || pendingTwoSpawn) {
+          value = 2;
+        } else if (!largestTile) {
+          value = Math.random() < 0.9 ? 2 : 4;
+        } else {
+          const spawnValues = [largestTile / 4, largestTile / 8].filter(candidate => candidate >= 2);
+          value = spawnValues.length
+            ? spawnValues[Math.floor(Math.random() * spawnValues.length)]
+            : 2;
         }
-        const spawnValues = [largestTile / 4, largestTile / 8].filter(value => value >= 2);
-        board[index] = spawnValues.length
-          ? spawnValues[Math.floor(Math.random() * spawnValues.length)]
-          : 2;
+
+        board[index] = value;
+        if (pendingTwoSpawn && value === 2) {
+          pendingTwoSpawn = false;
+        } else if (value === 2 && !forceTwo) {
+          pendingTwoSpawn = true;
+        }
         return index;
       }
 
@@ -469,11 +480,12 @@
         board = Array(SIZE * SIZE).fill(0);
         score = 0;
         won = false;
+        pendingTwoSpawn = false;
         overlay.hidden = true;
         overlayContent.classList.remove("is-win");
         announcement.textContent = "";
-        addTile();
-        addTile();
+        addTile(true);
+        addTile(true);
         render();
         boardElement.focus();
       }
